@@ -58,6 +58,12 @@ public class BidService {
                 .build();
         bid = bidRepository.save(bid);
 
+        // Auto-freeze when any buyer bids the maximum amount
+        if (req.getAmount().compareTo(product.getMaxBid()) == 0) {
+            product.setStatus(Product.Status.FROZEN);
+            productRepository.save(product);
+        }
+
         BidStatsResponse stats = getBidStats(productId);
         messagingTemplate.convertAndSend("/topic/products/" + productId, stats);
 

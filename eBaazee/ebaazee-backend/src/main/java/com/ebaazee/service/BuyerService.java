@@ -58,7 +58,8 @@ public class BuyerService {
         }
 
         Bid highestBid = bids.stream()
-                .max(Comparator.comparing(Bid::getAmount))
+                .max(Comparator.comparing(Bid::getAmount)
+                        .thenComparing(Comparator.comparing(Bid::getBidTime).reversed()))
                 .orElseThrow();
 
         if (!highestBid.getUser().getUserId().equals(buyer.getUserId())) {
