@@ -1,0 +1,57 @@
+package com.ebaazee.config;
+
+import com.ebaazee.entity.User;
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.crypto.SecretKey;
+import java.util.Date;
+
+@Component
+public class JwtUtil {
+
+    private final SecretKey key;
+    private final long expiryMs;
+
+    public JwtUtil(
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.expiry-ms}") long expiryMs) {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        this.expiryMs = expiryMs;
+    }
+
+    public String generateToken(User user) {
+        return Jwts.builder()
+                .subject(user.getEmail())
+                .claim("role", user.getRole().name())
+                .claim("name", user.getName())
+                .claim("userId", user.getUserId())
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expiryMs))
+                .signWith(key)
+                .compact();
+    }
+
+    public String extractEmail(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    public String extractRole(String token) {
+        return parseClaims(token).get("role", String.class);
+    }
+
+    public boolean isTokenValid(String token) {
+        try {
+            parseClaims(token);
+            return true;
+        } catch (JwtException | IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
+    }
+}
